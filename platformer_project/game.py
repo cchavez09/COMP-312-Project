@@ -1,48 +1,78 @@
 import pygame
 
-from platformer_project.sprites import Player, Platform
+from platformer_project.sprites import Player
+from platformer_project.level import Level, LEVEL_1
+from platformer_project.title import Title
+
+
+# Keep track of world size for consistent level size 
+# and prevent player from leaving world boundaries
+WORLD_WIDTH = 5000
+SCREEN_WIDTH = 1280
+SCREEN_HEIGHT = 720
 
 class Game:
 
     def __init__(self) -> None:
-        
+
         self.fps = 60
-        self.screen = pygame.display.set_mode((1280, 720))
-        
-        # Set game state to play to see what the game mechanics would look like
-        self.state = "play"
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
-        self.sprites = pygame.sprite.Group()
-        self.platforms = pygame.sprite.Group()
+        self.state = "title"
+        self.camera_x = 0
 
-        self.player = Player(40, 300)
-        self.sprites.add(self.player)
+        self.menu = Title(SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.level = Level(LEVEL_1, WORLD_WIDTH)
+        self.player = Player(40, 675)
 
-        floor = Platform(0, 680, 1280, 40)
-        self.sprites.add(floor)
-        self.platforms.add(floor)
-
+    # Pressing escape exits the game and handle_event takes care of events within player
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
                 pygame.event.post(pygame.event.Event(pygame.QUIT))
-        self.player.handle_event(event)
 
+        if self.state == "title":
+            self.menu.handle_event(event)
+        elif self.state == "play":
+            self.player.handle_event(event)
+
+    # check if player is jumping and check to see if player is colliding with platform
+    # if player is jumping and collides with platform then update player rect and position
+    # to be on top of the platform
     def _handle_collisions(self) -> None:
         if self.player.velocity.y > 0:
-            hits = pygame.sprite.spritecollide(self.player, self.platforms, False)
+            hits = pygame.sprite.spritecollide(self.player, self.level.platforms, False)
             for platform in hits:
                 self.player.rect.bottom = platform.rect.top
                 self.player.pos.y = self.player.rect.centery
                 self.player.velocity.y = 0
                 self.player.on_ground = True
 
+    # Update the camera to follow player but never show outside world boundaries
+    def _update_camera(self) -> None:
+        screen_width = self.screen.get_width()
+        # Center camera on player, clamped so it never shows outside the world
+        self.camera_x = int(self.player.pos.x) - screen_width // 2
+        self.camera_x = max(0, min(self.camera_x, self.level.world_width - screen_width))
+
     def update(self, dt: float) -> None:
-        if self.state == "play":
-            self.sprites.update(dt) 
+        if self.state == "title":
+            if self.menu.play_button.clicked:
+                self.state = "play"
+
+        elif self.state == "play":
+            self.player.update(dt)
+            self.level.update(dt)
             self._handle_collisions()
-            
+            self._update_camera()
+
     def draw(self) -> None:
-        self.screen.fill(pygame.Color("#ACA9A9"))
-        self.sprites.draw(self.screen)
+        if self.state == "title":
+            self.menu.draw(self.screen)
+
+        elif self.state == "play":
+            self.screen.fill(pygame.Color("#ACA9A9"))
+            self.level.draw(self.screen, self.camera_x)
+            offset_rect = self.player.rect.move(-self.camera_x, 0)
+            self.screen.blit(self.player.image, offset_rect)
         

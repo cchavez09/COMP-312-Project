@@ -5,7 +5,7 @@ from platformer_project.game import Game
 
 def main() -> None:
     pygame.init()
-    pygame.display.set_caption("Lost in Time")
+    pygame.display.set_caption("Comp 312 Platformer Project")
 
     game = Game()
     clock = pygame.time.Clock()

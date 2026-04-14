@@ -1,6 +1,6 @@
 import pygame
 
-
+WORLD_WIDTH = 5000
 
 class Player(pygame.sprite.Sprite):
     SIZE = 15
@@ -58,6 +58,16 @@ class Player(pygame.sprite.Sprite):
         self.velocity.y += self.GRAVITY * dt
         
         self.pos += self.velocity * dt
+
+        # Prevent leaving the left world boundary
+        if self.pos.x < self.SIZE / 2:
+            self.pos.x = self.SIZE / 2
+            self.velocity.x = 0
+        
+        if self.pos.x > WORLD_WIDTH - self.SIZE / 2:
+            self.pos.x = WORLD_WIDTH - self.SIZE / 2
+            self.velocity.x = 0
+
         self.rect.center = (int(self.pos.x), int(self.pos.y))
 
 class Platform(pygame.sprite.Sprite):
@@ -73,7 +83,7 @@ class Platform(pygame.sprite.Sprite):
 # to distinguish which type of hazard
 class Hazard:
     def __init__(self):
-        super().__
+        pass
 
 
 # Collectible Sprites like coins or powerups
