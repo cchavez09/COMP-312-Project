@@ -36,15 +36,16 @@ class Game:
         elif self.state == "play":
             self.player.handle_event(event)
 
-    # check if player is jumping and check to see if player is colliding with platform
-    # if player is jumping and collides with platform then update player rect and position
+    # check if player hitbox collides with platforms and if 
+    # player collides with the platform update player position
     # to be on top of the platform
     def _handle_collisions(self) -> None:
-        if self.player.velocity.y > 0:
-            hits = pygame.sprite.spritecollide(self.player, self.level.platforms, False)
-            for platform in hits:
-                self.player.rect.bottom = platform.rect.top
-                self.player.pos.y = self.player.rect.centery
+        hits = [platform for platform in self.level.platforms if self.player.hitbox.colliderect(platform.rect)]
+        for platform in hits:
+            if self.player.velocity.y >= 0:
+                self.player.hitbox.bottom = platform.rect.top
+                self.player.pos.y = self.player.hitbox.centery
+                self.player.rect.center = (int(self.player.pos.x), int(self.player.pos.y))
                 self.player.velocity.y = 0
                 self.player.on_ground = True
 
@@ -75,4 +76,6 @@ class Game:
             self.level.draw(self.screen, self.camera_x)
             offset_rect = self.player.rect.move(-self.camera_x, 0)
             self.screen.blit(self.player.image, offset_rect)
+            # Debug line for hitbox
+            # pygame.draw.rect(self.screen, (255, 0, 0), self.player.hitbox.move(-self.camera_x, 0), 2)
         

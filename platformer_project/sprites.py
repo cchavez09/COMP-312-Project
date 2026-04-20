@@ -3,7 +3,7 @@ import pygame
 WORLD_WIDTH = 5000
 
 class Player(pygame.sprite.Sprite):
-    SIZE = 15
+    SIZE = 60
     ACCEL = 3000.0
     MAX_SPEED = 500
     FRICTION = 15
@@ -13,13 +13,14 @@ class Player(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int):
         # Set initial values to player attributes
         super().__init__()
-        self.image = pygame.Surface((self.SIZE, self.SIZE))
-        self.image.fill(pygame.Color("#001068"))
-        self.rect = pygame.Rect(0, 0, self.SIZE, self.SIZE)
+        image = pygame.image.load("platformer_project/Assets/test.png").convert_alpha()
+        self.image = pygame.transform.scale(image, (self.SIZE, self.SIZE))
+        self.rect = self.image.get_rect()
         self.pos = pygame.Vector2(x, y)
         self.velocity = pygame.Vector2(0,0)
         self.jump_requested = False
         self.on_ground = True
+        self.hitbox = pygame.Rect(0, 0, self.SIZE - 30, self.SIZE)
 
     def _read_horizontal(self) -> float:
         # see if player is moving left or right using arrow keys or WASD
@@ -40,6 +41,9 @@ class Player(pygame.sprite.Sprite):
                 self.jump_requested = True
 
     def update(self, dt: float) -> None:
+        if self.on_ground:
+            self.velocity.y = self.GRAVITY * dt
+
         x = self._read_horizontal()
 
         # Read horizontal movement and apply acceleration & max speed to player
@@ -69,6 +73,8 @@ class Player(pygame.sprite.Sprite):
             self.velocity.x = 0
 
         self.rect.center = (int(self.pos.x), int(self.pos.y))
+        self.hitbox.center = self.rect.center
+        self.on_ground = False
 
 class Platform(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, width: int, height: int):
