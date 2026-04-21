@@ -87,8 +87,21 @@ class Platform(pygame.sprite.Sprite):
 
 # Hazards like spikes or fire (As we buld we can change this class name to "Spike" or "Fire"
 # to distinguish which type of hazard
-class Hazard:
-    def __init__(self):
+class Hazard(pygame.sprite.Sprite):
+    def __init__(self, x: int, y: int, width: int, height: int, hazard_type: str = "spikes"):
+        super().__init__()
+        self.hazard_type = hazard_type
+        
+        self.image = pygame.Surface((width, height))
+        
+        if self.hazard_type == "lava":
+            self.image.fill(pygame.Color("#FF6400"))
+        else:
+            self.image.fill(pygame.Color("#FF0000"))
+            
+        self.rect = self.image.get_rect(topleft=(x, y))
+
+    def update(self, dt: float) -> None:
         pass
 
 
