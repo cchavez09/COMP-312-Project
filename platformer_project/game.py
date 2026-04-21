@@ -1,20 +1,15 @@
 import pygame
 
 from platformer_project.sprites import Player
-from platformer_project.level import Level, LEVEL_1
+from platformer_project.level import Level, LEVEL_1, LEVEL_1_HAZARDS, LEVEL_1_SPAWN
 from platformer_project.title import Title
 
-
-# Keep track of world size for consistent level size 
-# and prevent player from leaving world boundaries
 WORLD_WIDTH = 5000
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
 
 class Game:
-
     def __init__(self) -> None:
-
         self.fps = 60
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -22,10 +17,9 @@ class Game:
         self.camera_x = 0
 
         self.menu = Title(SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.level = Level(LEVEL_1, WORLD_WIDTH)
-        self.player = Player(40, 675)
+        self.level = Level(LEVEL_1, LEVEL_1_HAZARDS, WORLD_WIDTH)
+        self.player = Player(LEVEL_1_SPAWN[0], LEVEL_1_SPAWN[1])
 
-    # Pressing escape exits the game and handle_event takes care of events within player
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
             if event.key == pygame.K_ESCAPE:
@@ -36,9 +30,6 @@ class Game:
         elif self.state == "play":
             self.player.handle_event(event)
 
-    # check if player hitbox collides with platforms and if 
-    # player collides with the platform update player position
-    # to be on top of the platform
     def _handle_collisions(self) -> None:
         hits = [platform for platform in self.level.platforms if self.player.hitbox.colliderect(platform.rect)]
         for platform in hits:
@@ -49,10 +40,15 @@ class Game:
                 self.player.velocity.y = 0
                 self.player.on_ground = True
 
-    # Update the camera to follow player but never show outside world boundaries
+        hazard_hits = [hazard for hazard in self.level.hazards if self.player.hitbox.colliderect(hazard.rect)]
+        if hazard_hits:
+            self.player.pos.x = LEVEL_1_SPAWN[0]
+            self.player.pos.y = LEVEL_1_SPAWN[1]
+            self.player.velocity.x = 0
+            self.player.velocity.y = 0
+
     def _update_camera(self) -> None:
         screen_width = self.screen.get_width()
-        # Center camera on player, clamped so it never shows outside the world
         self.camera_x = int(self.player.pos.x) - screen_width // 2
         self.camera_x = max(0, min(self.camera_x, self.level.world_width - screen_width))
 
@@ -76,6 +72,3 @@ class Game:
             self.level.draw(self.screen, self.camera_x)
             offset_rect = self.player.rect.move(-self.camera_x, 0)
             self.screen.blit(self.player.image, offset_rect)
-            # Debug line for hitbox
-            # pygame.draw.rect(self.screen, (255, 0, 0), self.player.hitbox.move(-self.camera_x, 0), 2)
-        
