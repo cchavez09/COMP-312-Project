@@ -34,6 +34,18 @@ class Player(pygame.sprite.Sprite):
 
         return float(x)
     
+    def reset(self, x: int, y: int) -> None:
+        # Reset player position and velocity to inital values
+        self.pos = pygame.Vector2(x, y)
+        self.velocity = pygame.Vector2(0, 0)
+        self.jump_requested = False
+        self.on_ground = True
+        self.rect.center = (int(self.pos.x), int(self.pos.y))
+        self.hitbox.center = self.rect.center
+        self.prev_bottom = self.hitbox.bottom
+        self.prev_right  = self.hitbox.right
+        self.prev_left   = self.hitbox.left
+
     def handle_event(self, event: pygame.event.Event) -> None:
         # Handle jump requests
         if event.type == pygame.KEYDOWN:
@@ -41,6 +53,11 @@ class Player(pygame.sprite.Sprite):
                 self.jump_requested = True
 
     def update(self, dt: float) -> None:
+        # Store the player's previous bottom position for collision handling
+        self.prev_bottom = self.hitbox.bottom
+        self.prev_right  = self.hitbox.right
+        self.prev_left   = self.hitbox.left
+
         if self.on_ground:
             self.velocity.y = self.GRAVITY * dt
 
@@ -106,8 +123,25 @@ class Hazard(pygame.sprite.Sprite):
         pass
 
 
+class Wall(pygame.sprite.Sprite):
+    def __init__(self, x: int, y: int, width: int, height: int):
+        super().__init__()
+        self.image = pygame.Surface((width, height))
+        self.image.fill(pygame.Color("#000000"))
+        self.rect = self.image.get_rect(topleft=(x, y))
+
+
+class Goal(pygame.sprite.Sprite):
+    def __init__(self, x: int, y: int):
+        super().__init__()
+        self.image = pygame.Surface((24, 80), pygame.SRCALPHA)
+        pygame.draw.rect(self.image, pygame.Color("#F5D000"), (10, 0, 4, 80))                    # pole
+        pygame.draw.polygon(self.image, pygame.Color("#00CC44"), [(14, 4), (24, 16), (14, 28)])  # flag
+        self.rect = self.image.get_rect(bottomleft=(x, y))
+
+
 # Collectible Sprites
-# Created a rect with clear background with a circle in the center depicting as a 
+# Created a rect with clear background with a circle in the center depicting as a
 # "collectible" for the player
 class Collectible(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int):

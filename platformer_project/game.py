@@ -6,7 +6,7 @@ from platformer_project.title import Title
 
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
-WORLD_WIDTH = 5000
+WORLD_WIDTH = 2500
 
 class Game:
     def __init__(self) -> None:
@@ -17,9 +17,8 @@ class Game:
         self.camera_x = 0
 
         self.menu = Title(SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.world_width = WORLD_WIDTH
 
-        self.current_level = 1
+        self.current_level = 2
         self.level = Level()
         self.level._build_level(self.current_level)
         self.player = Player(*self.level.spawn)
@@ -29,6 +28,7 @@ class Game:
             if event.key == pygame.K_ESCAPE:
                 pygame.event.post(pygame.event.Event(pygame.QUIT))
 
+        # Handle events based on the game state
         if self.state == "title":
             self.menu.handle_event(event)
         elif self.state == "play":
@@ -36,16 +36,45 @@ class Game:
         elif self.state == "dead":
             if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
                 self.restart()
+        elif self.state == "win":
+            if event.type == pygame.KEYDOWN and event.key == pygame.K_RETURN:
+                self._next_level()
 
     def _handle_collisions(self) -> None:
+        # Handle for collisions with platforms, walls, hazards, collectibles and goals
         hits = [platform for platform in self.level.platforms if self.player.hitbox.colliderect(platform.rect)]
         for platform in hits:
-            if self.player.velocity.y >= 0:
+            if self.player.velocity.y >= 0 and self.player.prev_bottom <= platform.rect.top:
                 self.player.hitbox.bottom = platform.rect.top
                 self.player.pos.y = self.player.hitbox.centery
                 self.player.rect.center = (int(self.player.pos.x), int(self.player.pos.y))
                 self.player.velocity.y = 0
                 self.player.on_ground = True
+
+        # Handle for wall collisions, not allowing player to move through them while
+        # being able to jump on top of the walls
+        wall_hits = [wall for wall in self.level.walls if self.player.hitbox.colliderect(wall.rect)]
+        for wall in wall_hits:
+            if self.player.prev_right <= wall.rect.left:
+                self.player.hitbox.right = wall.rect.left
+                self.player.pos.x = self.player.hitbox.centerx
+                self.player.rect.center = (int(self.player.pos.x), int(self.player.pos.y))
+                self.player.velocity.x = 0
+            elif self.player.prev_left >= wall.rect.right:
+                self.player.hitbox.left = wall.rect.right
+                self.player.pos.x = self.player.hitbox.centerx
+                self.player.rect.center = (int(self.player.pos.x), int(self.player.pos.y))
+                self.player.velocity.x = 0
+            elif self.player.prev_bottom <= wall.rect.top:
+                self.player.hitbox.bottom = wall.rect.top
+                self.player.pos.y = self.player.hitbox.centery
+                self.player.rect.center = (int(self.player.pos.x), int(self.player.pos.y))
+                self.player.velocity.y = 0
+                self.player.on_ground = True
+
+        # Handle for player faling off the world and resulting in death
+        if self.player.pos.y > 800:
+            self.state = "dead"
 
         hazard_hits = [hazard for hazard in self.level.hazards if self.player.hitbox.colliderect(hazard.rect)]
         if hazard_hits:
@@ -55,10 +84,14 @@ class Game:
         for collectible in collectible_hit:
             collectible.kill()
 
+        goal_hit = [g for g in self.level.goals if self.player.hitbox.colliderect(g.rect)]
+        if goal_hit:
+            self.state = "win"
+
     def _update_camera(self) -> None:
         screen_width = self.screen.get_width()
         self.camera_x = int(self.player.pos.x) - screen_width // 2
-        self.camera_x = max(0, min(self.camera_x, self.world_width - screen_width))
+        self.camera_x = max(0, min(self.camera_x, self.level.world_width - screen_width))
 
     def update(self, dt: float) -> None:
         if self.state == "title":
@@ -71,11 +104,26 @@ class Game:
             self._handle_collisions()
             self._update_camera()
 
+    # Added restart method and build level method to reset the level
+    # when player dies
     def restart(self) -> None:
         self.level._build_level(self.current_level)
-        self.player.pos = pygame.Vector2(self.level.spawn)
-        self.player.velocity.x = 0
-        self.player.velocity.y = 0
+        self.player.reset(*self.level.spawn)
+        self.camera_x = 0
+        self.state = "play"
+
+    # When player wins, move to the next level and reset player and camera
+    # and return to menu when all levels done
+    def _next_level(self) -> None:
+        self.current_level += 1
+        if self.current_level > 2:
+            self.current_level = 1
+            self.menu.play_button.clicked = False
+            self.state = "title"
+            return
+        self.level._build_level(self.current_level)
+        self.player.reset(*self.level.spawn)
+        self.camera_x = 0
         self.state = "play"
 
     def draw(self) -> None:
@@ -92,6 +140,13 @@ class Game:
             font = pygame.font.SysFont(None, 100)
             message = font.render("YOU DIED", True, pygame.Color("#FF0000"))
             direction = font.render("Press ENTER to restart", True, pygame.Color("#FF0000"))
+            self.screen.blit(message, message.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40)))
+            self.screen.blit(direction, direction.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40)))
+
+        elif self.state == "win":
+            font = pygame.font.SysFont(None, 100)
+            message = font.render("LEVEL COMPLETE!", True, pygame.Color("#00CC44"))
+            direction = font.render("Press ENTER for next level", True, pygame.Color("#00CC44"))
             self.screen.blit(message, message.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 - 40)))
             self.screen.blit(direction, direction.get_rect(center=(SCREEN_WIDTH // 2, SCREEN_HEIGHT // 2 + 40)))
             
