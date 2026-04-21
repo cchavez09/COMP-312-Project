@@ -78,7 +78,8 @@ class Player(pygame.sprite.Sprite):
 
 class Platform(pygame.sprite.Sprite):
     def __init__(self, x: int, y: int, width: int, height: int):
-        # Create platform class to make boundaries
+        # Create platform class to make boundaries and platforms
+        # players can get on top of
         super().__init__()
         self.image = pygame.Surface((width, height))
         self.image.fill(pygame.Color("#000000"))
@@ -105,8 +106,12 @@ class Hazard(pygame.sprite.Sprite):
         pass
 
 
-# Collectible Sprites like coins or powerups
-# 
-class Collectible:
-    def __init__(self):
-        pass
+# Collectible Sprites
+# Created a rect with clear background with a circle in the center depicting as a 
+# "collectible" for the player
+class Collectible(pygame.sprite.Sprite):
+    def __init__(self, x: int, y: int):
+        super().__init__()
+        self.image = pygame.Surface((20, 20), pygame.SRCALPHA)
+        pygame.draw.circle(self.image, pygame.Color("#FF9D00"), (10, 10), 10)
+        self.rect = self.image.get_rect(center=(x, y))
