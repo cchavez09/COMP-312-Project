@@ -1,19 +1,22 @@
 import pygame
 from platformer_project.sprites import Platform, Hazard, Collectible
 
-# Level data: each entry is (x, y, width, height)
 LEVEL_1_SPAWN = (40, 675)
 
 LEVEL_1 = [
-    (0,   680, 5000, 40),  # floor
-    (300, 550,  200, 20),           # platform
-    (600, 420,  150, 20),           # platform
-    (850, 300,  200, 20),           # platform
+    (0,   680, 5000, 40),
+    (300, 550,  200, 20),
+    (600, 420,  150, 20),
+    (850, 300,  200, 20),
+]
+
+LEVEL_1_HAZARDS = [
+    (400, 660, 100, 20, "spikes"),
+    (750, 400, 100, 20, "lava"),
 ]
 
 class Level:
-
-    def __init__(self, platform_data: list, world_width: int) -> None:
+    def __init__(self, platform_data: list, hazard_data: list, world_width: int) -> None:
         self.world_width = world_width
         self.platforms   = pygame.sprite.Group()
         self.hazards     = pygame.sprite.Group()
@@ -23,8 +26,11 @@ class Level:
             p = Platform(x, y, w, h)
             self.platforms.add(p)
 
+        for (x, y, w, h, h_type) in hazard_data:
+            h_sprite = Hazard(x, y, w, h, hazard_type=h_type)
+            self.hazards.add(h_sprite)
+
     def all_sprites(self) -> list:
-        # Returns every sprite in this level so Game can render them
         return list(self.platforms) + list(self.hazards) + list(self.collectibles)
 
     def update(self, dt: float) -> None:
