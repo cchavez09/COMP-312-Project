@@ -9,7 +9,7 @@ SCREEN_HEIGHT = 720
 WORLD_WIDTH = 2500
 
 class Game:
-    def __init__(self) -> None:
+   def __init__(self) -> None:
         self.fps = 60
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -17,11 +17,21 @@ class Game:
         self.camera_x = 0
 
         self.menu = Title(SCREEN_WIDTH, SCREEN_HEIGHT)
+        self.level = Level(LEVEL_1, LEVEL_1_HAZARDS, WORLD_WIDTH)
+        self.player = Player(LEVEL_1_SPAWN[0], LEVEL_1_SPAWN[1])
 
-        self.current_level = 2
-        self.level = Level()
-        self.level._build_level(self.current_level)
-        self.player = Player(*self.level.spawn)
+        # --- NEW: Load the background image ---
+        try:
+            # Load image and scale it to match the screen height
+            loaded_bg = pygame.image.load("platformer_project/Assets/bg.png").convert()
+            # Calculate the new width to keep the image's aspect ratio correct
+            aspect_ratio = loaded_bg.get_width() / loaded_bg.get_height()
+            new_width = int(SCREEN_HEIGHT * aspect_ratio)
+            self.bg_image = pygame.transform.scale(loaded_bg, (new_width, SCREEN_HEIGHT))
+        except FileNotFoundError:
+            # Fallback just in case you forget to add the image
+            self.bg_image = pygame.Surface((SCREEN_WIDTH, SCREEN_HEIGHT))
+            self.bg_image.fill(pygame.Color("#333333"))
 
     def handle_event(self, event: pygame.event.Event) -> None:
         if event.type == pygame.KEYDOWN:
@@ -126,9 +136,27 @@ class Game:
         self.camera_x = 0
         self.state = "play"
 
-    def draw(self) -> None:
+  def draw(self) -> None:
         if self.state == "title":
             self.menu.draw(self.screen)
+
+        elif self.state == "play":
+            # --- NEW: Parallax Scrolling Background ---
+            # 0.5 makes the background move at half the speed of the camera
+            parallax_speed = 0.5 
+            bg_width = self.bg_image.get_width()
+            
+            # Use modulo (%) to loop the x position infinitely
+            bg_x = -(self.camera_x * parallax_speed) % bg_width
+            
+            # Draw two copies of the background side-by-side so it never runs out
+            self.screen.blit(self.bg_image, (int(bg_x), 0))
+            self.screen.blit(self.bg_image, (int(bg_x) - bg_width, 0))
+
+            # Draw the level and player on top of the background
+            self.level.draw(self.screen, self.camera_x)
+            offset_rect = self.player.rect.move(-self.camera_x, 0)
+            self.screen.blit(self.player.image, offset_rect)
 
         elif self.state == "play":
             self.screen.fill(pygame.Color("#ACA9A9"))
