@@ -9,7 +9,7 @@ SCREEN_HEIGHT = 720
 WORLD_WIDTH = 2500
 
 class Game:
-   def __init__(self) -> None:
+    def __init__(self) -> None:
         self.fps = 60
         self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
 
@@ -17,13 +17,15 @@ class Game:
         self.camera_x = 0
 
         self.menu = Title(SCREEN_WIDTH, SCREEN_HEIGHT)
-        self.level = Level(LEVEL_1, LEVEL_1_HAZARDS, WORLD_WIDTH)
-        self.player = Player(LEVEL_1_SPAWN[0], LEVEL_1_SPAWN[1])
+        self.current_level = 1
+        self.level = Level()
+        self.level._build_level(self.current_level)
+        self.player = Player(*self.level.spawn)
 
         # --- NEW: Load the background image ---
         try:
             # Load image and scale it to match the screen height
-            loaded_bg = pygame.image.load("platformer_project/Assets/bg.png").convert()
+            loaded_bg = pygame.image.load("platformer_project/Assets/bg.jpg").convert()
             # Calculate the new width to keep the image's aspect ratio correct
             aspect_ratio = loaded_bg.get_width() / loaded_bg.get_height()
             new_width = int(SCREEN_HEIGHT * aspect_ratio)
@@ -136,7 +138,7 @@ class Game:
         self.camera_x = 0
         self.state = "play"
 
-  def draw(self) -> None:
+    def draw(self) -> None:
         if self.state == "title":
             self.menu.draw(self.screen)
 
